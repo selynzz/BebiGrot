@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:translateX="12"
+        android:translateY="12">
+        <text
+            android:text="Kg"
+            android:textSize="12sp"
+            android:textColor="@android:color/black"/>
+    </group>
+</vector>
