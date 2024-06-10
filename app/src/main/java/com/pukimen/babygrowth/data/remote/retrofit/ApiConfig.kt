@@ -1,4 +1,5 @@
 package com.pukimen.babygrowth.data.remote.retrofit
+
 import com.pukimen.babygrowth.BuildConfig
 import okhttp3.ConnectionSpec
 import okhttp3.Interceptor
@@ -7,6 +8,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.Arrays
+import java.util.concurrent.TimeUnit
 
 class ApiConfig {
     companion object {
@@ -15,85 +17,63 @@ class ApiConfig {
         val baseUrlRecomendation = BuildConfig.BASE_URL_RECOMENDATION
         val apiKey = BuildConfig.API_KEY
 
-        fun getApiService(): ApiService {
-            val logging = HttpLoggingInterceptor()
-            logging.level = HttpLoggingInterceptor.Level.BODY
+        private fun createOkHttpClient(interceptors: List<Interceptor>): OkHttpClient {
+            val builder = OkHttpClient.Builder()
+                .connectionSpecs(listOf(ConnectionSpec.CLEARTEXT, ConnectionSpec.MODERN_TLS))
+                .connectTimeout(10, TimeUnit.SECONDS)  // Connection timeout
+                .readTimeout(30, TimeUnit.SECONDS)     // Read timeout
+                .writeTimeout(30, TimeUnit.SECONDS)    // Write timeout
 
-            val authInterceptor = Interceptor { chain ->
-                val req = chain.request()
-                val requestHeaders = req.newBuilder().build()
-                chain.proceed(requestHeaders)
-            }
+            interceptors.forEach { builder.addInterceptor(it) }
 
-            val client = OkHttpClient.Builder()
-                .addInterceptor(authInterceptor)
-                .addInterceptor(logging)
-                .connectionSpecs(Arrays.asList(ConnectionSpec.CLEARTEXT, ConnectionSpec.MODERN_TLS))
-                .build()
+            // Retry logic
+            builder.retryOnConnectionFailure(true)
 
-            val retrofit = Retrofit.Builder()
+            return builder.build()
+        }
+
+        private fun createRetrofit(baseUrl: String, client: OkHttpClient): Retrofit {
+            return Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build()
-
-            return retrofit.create(ApiService::class.java)
         }
 
+        fun getApiService(): ApiService {
+            val logging = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+
+            val authInterceptor = Interceptor { chain ->
+                val request = chain.request().newBuilder().build()
+                chain.proceed(request)
+            }
+
+            val client = createOkHttpClient(listOf(authInterceptor, logging))
+            return createRetrofit(baseUrl, client).create(ApiService::class.java)
+        }
 
         fun getRecomendationApiService(): ApiService {
             val authInterceptor = Interceptor { chain ->
-                val req = chain.request()
-                val requestHeaders = req.newBuilder().build()
-                chain.proceed(requestHeaders)
+                val request = chain.request().newBuilder().build()
+                chain.proceed(request)
             }
-            val client = OkHttpClient.Builder()
-                .addInterceptor(authInterceptor)
-                .connectionSpecs(Arrays.asList(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
-                .build()
-            val retrofit = Retrofit.Builder()
-                .baseUrl(baseUrlRecomendation)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build()
-            return retrofit.create(ApiService::class.java)
+
+            val client = createOkHttpClient(listOf(authInterceptor))
+            return createRetrofit(baseUrlRecomendation, client).create(ApiService::class.java)
         }
 
         fun getNinjaApiService(): ApiService {
             val authInterceptor = Interceptor { chain ->
-                val req = chain.request()
-                val requestHeaders = req.newBuilder()
+                val request = chain.request().newBuilder()
                     .addHeader("x-api-key", apiKey)
                     .build()
-                chain.proceed(requestHeaders)
+                chain.proceed(request)
             }
-            val client = OkHttpClient.Builder()
-                .addInterceptor(authInterceptor)
-                .connectionSpecs(Arrays.asList(ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT))
-                .build()
-            val retrofit = Retrofit.Builder()
-                .baseUrl(baseUrlNinja)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build()
-            return retrofit.create(ApiService::class.java)
+
+            val client = createOkHttpClient(listOf(authInterceptor))
+            return createRetrofit(baseUrlNinja, client).create(ApiService::class.java)
         }
-
-        fun getScanApiService(): ApiService {
-            val loggingInterceptor =
-                HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-            val client = OkHttpClient.Builder()
-                .addInterceptor(loggingInterceptor)
-                .build()
-            val retrofit = Retrofit.Builder()
-                .baseUrl("https://classification-api.dicoding.dev/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build()
-            return retrofit.create(ApiService::class.java)
-        }
-
-
-
     }
 }

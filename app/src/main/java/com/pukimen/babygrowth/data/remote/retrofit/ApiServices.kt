@@ -3,10 +3,10 @@ package com.pukimen.babygrowth.data.remote.retrofit
 import com.pukimen.babygrowth.data.remote.response.LoginResponse
 import com.pukimen.babygrowth.data.remote.response.NuritionResponse
 import com.pukimen.babygrowth.data.remote.response.NuritionResponseItem
+import com.pukimen.babygrowth.data.remote.response.PredictResponse
 import com.pukimen.babygrowth.data.remote.response.RecomendationResponse
 import com.pukimen.babygrowth.data.remote.response.RegisterResponse
 import com.pukimen.babygrowth.data.remote.response.RekomendasiItem
-import com.pukimen.babygrowth.data.remote.response.ScanResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Call
@@ -34,9 +34,9 @@ interface ApiService {
     fun getRecomendation(@Query("id_resep") query: String): Call<RecomendationResponse>
 
     @Multipart
-    @POST("skin-cancer/predict")
-    suspend fun uploadImage(
-        @Part file: MultipartBody.Part
-    ): ScanResponse
+    @POST("predict")
+    fun uploadImage(
+        @Part image: MultipartBody.Part
+    ): Call<PredictResponse>
 
 }

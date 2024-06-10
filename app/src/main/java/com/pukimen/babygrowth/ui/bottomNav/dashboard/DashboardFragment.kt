@@ -14,8 +14,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.pukimen.babygrowth.databinding.FragmentDashboardBinding
 import com.pukimen.babygrowth.ui.ScanActivity
+import com.pukimen.babygrowth.ui.ScanViewModel
+import com.pukimen.babygrowth.ui.ViewModelFactory
 import com.pukimen.babygrowth.utils.getImageUri
 import java.io.File
 import com.yalantis.ucrop.UCrop
@@ -31,6 +34,8 @@ class DashboardFragment : Fragment() {
     private lateinit var launcherIntentCamera: ActivityResultLauncher<Uri>
     private var currentImageUri: Uri? = null
 
+    private lateinit var scanViewModel: ScanViewModel
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -38,6 +43,9 @@ class DashboardFragment : Fragment() {
     ): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
+
+        val viewModelFactory = ViewModelFactory.getInstance(requireContext(), requireActivity().application)
+        scanViewModel = ViewModelProvider(this, viewModelFactory).get(ScanViewModel::class.java)
 
         requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
